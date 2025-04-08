@@ -1,0 +1,16 @@
+{
+  "name": "video-protegido",
+  "version": "1.0.0",
+  "description": "Servidor Node.js que reproduce video protegido por contraseña",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.7"
+  }
+}
