@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const VIDEO_PASSWORD = "secreta";
-const VIDEO_URL = "https://tuhost.com/privado/video.mp4";
+const VIDEO_URL = "https://luchamedia.es/risas/rojo310325p1.mp4";
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
