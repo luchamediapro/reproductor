@@ -23,7 +23,7 @@ app.post('/video', (req, res) => {
   if (req.body.pass === VIDEO_PASSWORD) {
     res.send(`
       <h2>Video protegido</h2>
-      <video width="640" height="360" controls>
+      <video width="950" height="360" controls>
         <source src="/secure-video" type="video/mp4">
       </video>
     `);
