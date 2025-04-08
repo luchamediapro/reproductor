@@ -1,11 +1,10 @@
-// server.js
 const express = require('express');
 const fetch = require('node-fetch');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 const VIDEO_PASSWORD = "secreta"; // Cambia esta contraseña por una más segura si lo deseas
-const VIDEO_URL = "https://luchamedia.es/risas/rojo310325p1.mp4"; // La URL del video alojado externamente
+const VIDEO_URL = "https://luchamedia.es/risas/rojo310325p1.mp4"; // URL del video alojado externamente
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -31,13 +30,39 @@ app.post('/video', (req, res) => {
   }
 });
 
+// Este es el endpoint que sirve el video en fragmentos
 app.get('/secure-video', async (req, res) => {
-  // Aquí verificas la contraseña o el token, y luego sirves el video
+  const range = req.headers.range;
+
+  if (!range) {
+    res.status(400).send("Se requiere rango.");
+    return;
+  }
+
   try {
-    const videoResponse = await fetch(VIDEO_URL);
+    // Obtiene las cabeceras del video
+    const videoStats = await fetch(VIDEO_URL);
+    const videoSize = videoStats.headers.get('content-length');
+
+    // Define el tamaño de los fragmentos (1MB por fragmento)
+    const CHUNK_SIZE = 1 * 1024 * 1024;  // 1 MB
+    const start = Number(range.replace(/\D/g, ""));
+    const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
+
+    // Solicita solo el fragmento del video correspondiente
+    const videoResponse = await fetch(VIDEO_URL, {
+      headers: { Range: `bytes=${start}-${end}` }
+    });
+
     if (!videoResponse.ok) throw new Error("No se pudo acceder al video");
 
+    // Define las cabeceras para el streaming
+    res.status(206);
     res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Range', `bytes ${start}-${end}/${videoSize}`);
+    res.setHeader('Accept-Ranges', 'bytes');
+
+    // Transmite el fragmento del video al cliente
     videoResponse.body.pipe(res);
   } catch (err) {
     res.status(500).send("Error al acceder al video.");
