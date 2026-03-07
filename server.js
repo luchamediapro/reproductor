@@ -3,25 +3,23 @@ const axios = require("axios");
 
 const app = express();
 
-app.use(express.static("public"));
-
 const CHANNEL = "luchamedia";
 
-async function getStream(){
+async function getStream() {
 
-try{
+try {
 
-const api = `https://live.vkvideo.ru/api/v1/blog/${CHANNEL}/live`;
+const url = `https://live.vkvideo.ru/api/v1/blog/${CHANNEL}/stream`;
 
-const r = await axios.get(api,{
+const r = await axios.get(url,{
 headers:{
 "User-Agent":"Mozilla/5.0",
 "Referer":"https://live.vkvideo.ru/"
 }
 });
 
-if(r.data && r.data.live && r.data.live.playback_url){
-return r.data.live.playback_url;
+if(r.data && r.data.stream && r.data.stream.playback_url){
+return r.data.stream.playback_url;
 }
 
 return null;
@@ -32,6 +30,10 @@ return null;
 
 }
 
+app.get("/", (req,res)=>{
+res.send("Servidor funcionando");
+});
+
 app.get("/stream", async (req,res)=>{
 
 const stream = await getStream();
@@ -39,11 +41,11 @@ const stream = await getStream();
 if(stream){
 res.send(stream);
 }else{
-res.send("stream no disponible");
+res.send("STREAM NO DISPONIBLE");
 }
 
 });
 
-app.listen(3000,()=>{
-console.log("server iniciado");
+app.listen(3000, ()=>{
+console.log("Servidor iniciado");
 });
