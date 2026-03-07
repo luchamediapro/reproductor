@@ -1,70 +1,69 @@
 const express = require("express");
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 async function getStream() {
-  try {
 
-    const browser = await puppeteer.launch({
-      headless: "new",
-      executablePath: puppeteer.executablePath(),
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage"
-      ]
-    });
+try {
 
-    const page = await browser.newPage();
+const browser = await puppeteer.launch({
+headless: true,
+executablePath: "/usr/bin/chromium-browser",
+args: [
+"--no-sandbox",
+"--disable-setuid-sandbox",
+"--disable-dev-shm-usage",
+"--disable-gpu"
+]
+});
 
-    let stream = null;
+const page = await browser.newPage();
 
-    page.on("request", req => {
+let stream = null;
 
-      const url = req.url();
+page.on("request", req => {
 
-      if (url.includes("okcdn.ru") && url.includes("manifest.mpd")) {
-        stream = url;
-      }
+const url = req.url();
 
-    });
-
-    await page.goto(
-      "https://live.vkvideo.ru/app/embed/luchamedia",
-      { waitUntil: "networkidle2", timeout: 30000 }
-    );
-
-    await new Promise(r => setTimeout(r, 6000));
-
-    await browser.close();
-
-    return stream;
-
-  } catch (e) {
-
-    return "ERROR: " + e.message;
-
-  }
+if (url.includes("okcdn.ru") && url.includes("manifest.mpd")) {
+stream = url;
 }
 
-app.get("/", (req, res) => {
-  res.send("Servidor extractor VK funcionando");
 });
 
-app.get("/stream", async (req, res) => {
+await page.goto(
+"https://live.vkvideo.ru/app/embed/luchamedia",
+{ waitUntil: "networkidle2", timeout: 30000 }
+);
 
-  const stream = await getStream();
+await new Promise(r => setTimeout(r,6000));
 
-  if (stream) {
-    res.send(stream);
-  } else {
-    res.send("STREAM NO ENCONTRADO");
-  }
+await browser.close();
+
+return stream;
+
+}catch(e){
+
+return "ERROR: " + e.message;
+
+}
+
+}
+
+app.get("/", (req,res)=>{
+res.send("Extractor VK funcionando");
+});
+
+app.get("/stream", async (req,res)=>{
+
+const stream = await getStream();
+
+res.send(stream || "STREAM NO ENCONTRADO");
 
 });
 
-app.listen(PORT, () => {
-  console.log("Servidor iniciado en puerto " + PORT);
+app.listen(PORT,()=>{
+console.log("Servidor iniciado");
 });
