@@ -8,22 +8,32 @@ async function getStream() {
 
 try {
 
-const url = "https://live.vkvideo.ru/app/embed/luchamedia";
+const embed = await axios.get(
+"https://live.vkvideo.ru/app/embed/luchamedia",
+{headers:{ "User-Agent":"Mozilla/5.0"}}
+);
 
-const r = await axios.get(url,{
-headers:{
-"User-Agent":"Mozilla/5.0"
+const html = embed.data;
+
+/* buscar id del stream */
+
+const idMatch = html.match(/"broadcast_id":"(\d+)"/);
+
+if(!idMatch){
+return null;
 }
-});
 
-const html = r.data;
+const broadcastId = idMatch[1];
 
-/* buscar url okcdn */
+/* consultar info del stream */
 
-const match = html.match(/https:\/\/[^"]+okcdn\.ru[^"]+manifest\.mpd[^"]*/);
+const api = await axios.get(
+`https://live.vkvideo.ru/api/v1/broadcast/${broadcastId}`,
+{headers:{ "User-Agent":"Mozilla/5.0"}}
+);
 
-if(match){
-return match[0];
+if(api.data && api.data.playback_url){
+return api.data.playback_url;
 }
 
 return null;
@@ -44,7 +54,7 @@ app.get("/stream", async (req,res)=>{
 
 const stream = await getStream();
 
-res.send(stream || "STREAM NO ENCONTRADO");
+res.send(stream || "STREAM NO DISPONIBLE");
 
 });
 
