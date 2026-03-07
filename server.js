@@ -34,6 +34,14 @@ return stream;
 
 }
 
+/* pagina principal */
+
+app.get("/", (req,res)=>{
+res.send("Servidor VK extractor funcionando");
+});
+
+/* endpoint del stream */
+
 app.get("/stream", async (req,res)=>{
 
 const stream = await getStream();
@@ -47,5 +55,5 @@ res.send("STREAM NO ENCONTRADO");
 });
 
 app.listen(3000,()=>{
-console.log("server iniciado");
+console.log("Servidor iniciado");
 });
