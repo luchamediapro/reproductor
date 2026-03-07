@@ -5,9 +5,15 @@ const app = express();
 
 async function getStream(){
 
+try{
+
 const browser = await puppeteer.launch({
-headless:true,
-args:["--no-sandbox","--disable-setuid-sandbox"]
+headless: "new",
+args: [
+"--no-sandbox",
+"--disable-setuid-sandbox",
+"--disable-dev-shm-usage"
+]
 });
 
 const page = await browser.newPage();
@@ -24,33 +30,34 @@ stream = url;
 
 });
 
-await page.goto("https://live.vkvideo.ru/app/embed/luchamedia");
+await page.goto("https://live.vkvideo.ru/app/embed/luchamedia",{
+waitUntil:"networkidle2",
+timeout:30000
+});
 
-await new Promise(r => setTimeout(r,8000));
+await new Promise(r=>setTimeout(r,5000));
 
 await browser.close();
 
 return stream;
 
+}catch(e){
+
+return "ERROR: " + e.message;
+
 }
 
-/* pagina principal */
+}
 
 app.get("/", (req,res)=>{
-res.send("Servidor VK extractor funcionando");
+res.send("Extractor VK funcionando");
 });
-
-/* endpoint del stream */
 
 app.get("/stream", async (req,res)=>{
 
 const stream = await getStream();
 
-if(stream){
-res.send(stream);
-}else{
-res.send("STREAM NO ENCONTRADO");
-}
+res.send(stream || "STREAM NO ENCONTRADO");
 
 });
 
