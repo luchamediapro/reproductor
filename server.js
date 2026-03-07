@@ -1,38 +1,38 @@
 const express = require("express");
-const axios = require("axios");
+const puppeteer = require("puppeteer");
 
 const app = express();
 
-const CHANNEL = "luchamedia";
+async function getStream(){
 
-async function getStream() {
-
-try {
-
-const url = `https://live.vkvideo.ru/api/v1/blog/${CHANNEL}/stream`;
-
-const r = await axios.get(url,{
-headers:{
-"User-Agent":"Mozilla/5.0",
-"Referer":"https://live.vkvideo.ru/"
-}
+const browser = await puppeteer.launch({
+headless:true,
+args:["--no-sandbox","--disable-setuid-sandbox"]
 });
 
-if(r.data && r.data.stream && r.data.stream.playback_url){
-return r.data.stream.playback_url;
+const page = await browser.newPage();
+
+let stream = null;
+
+page.on("request", req => {
+
+const url = req.url();
+
+if(url.includes("okcdn.ru") && url.includes("manifest.mpd")){
+stream = url;
 }
 
-return null;
-
-}catch(e){
-return null;
-}
-
-}
-
-app.get("/", (req,res)=>{
-res.send("Servidor funcionando");
 });
+
+await page.goto("https://live.vkvideo.ru/app/embed/luchamedia");
+
+await new Promise(r => setTimeout(r,8000));
+
+await browser.close();
+
+return stream;
+
+}
 
 app.get("/stream", async (req,res)=>{
 
@@ -41,11 +41,11 @@ const stream = await getStream();
 if(stream){
 res.send(stream);
 }else{
-res.send("STREAM NO DISPONIBLE");
+res.send("STREAM NO ENCONTRADO");
 }
 
 });
 
-app.listen(3000, ()=>{
-console.log("Servidor iniciado");
+app.listen(3000,()=>{
+console.log("server iniciado");
 });
