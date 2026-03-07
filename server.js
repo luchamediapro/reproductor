@@ -30,6 +30,14 @@ return null;
 
 }
 
+/* pagina principal */
+
+app.get("/", (req,res)=>{
+res.send("Servidor VK Stream funcionando");
+});
+
+/* endpoint stream */
+
 app.get("/stream", async (req,res)=>{
 
 const stream = await getStream();
