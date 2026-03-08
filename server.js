@@ -5,6 +5,10 @@ const app = express();
 
 const BASE = "http://45.225.68.1:8532/Live/878e0987f8fffce401028e0283b0b24d/";
 
+app.get("/", (req,res)=>{
+    res.send("Proxy HLS activo");
+});
+
 app.get("/stream", async (req, res) => {
 
     const file = req.query.file || "local-ch30.playlist.m3u8";
@@ -12,44 +16,51 @@ app.get("/stream", async (req, res) => {
 
     try {
 
-        const response = await axios.get(url, {
-            responseType: "text",
-            headers: {
-                "User-Agent": "Mozilla/5.0",
-                "Referer": "http://45.225.68.1/"
-            }
-        });
+        if(file.endsWith(".m3u8")){
 
-        if (file.includes(".m3u8")) {
+            const response = await axios.get(url,{
+                headers:{
+                    "User-Agent":"Mozilla/5.0"
+                }
+            });
 
             let playlist = response.data;
 
-            playlist = playlist.replace(/(.*\.ts)/g, (match) => {
-                return "/stream?file=" + match;
+            playlist = playlist.replace(/(.*\.ts)/g,(match)=>{
+                return `/stream?file=${match}`;
             });
 
-            res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+            res.setHeader("Content-Type","application/vnd.apple.mpegurl");
             res.send(playlist);
 
-        } else {
+        }else{
 
             const stream = await axios({
-                url: url,
-                method: "GET",
-                responseType: "stream"
+                url:url,
+                method:"GET",
+                responseType:"stream",
+                headers:{
+                    "User-Agent":"Mozilla/5.0"
+                }
             });
 
-            res.setHeader("Content-Type", "video/mp2t");
+            res.setHeader("Content-Type","video/mp2t");
+
             stream.data.pipe(res);
 
         }
 
-    } catch (error) {
-        res.status(500).send("Error cargando stream");
+    } catch(e){
+
+        console.log(e.message);
+        res.status(500).send("Error en stream");
+
     }
 
 });
 
-app.listen(3000, () => {
-    console.log("Proxy HLS activo");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT,()=>{
+    console.log("Servidor iniciado");
 });
