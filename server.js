@@ -2,62 +2,54 @@ const express = require("express");
 const axios = require("axios");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-async function getStream() {
+const BASE = "http://45.225.68.1:8532/Live/878e0987f8fffce401028e0283b0b24d/";
 
-try {
+app.get("/stream", async (req, res) => {
 
-const embed = await axios.get(
-"https://live.vkvideo.ru/app/embed/luchamedia",
-{headers:{ "User-Agent":"Mozilla/5.0"}}
-);
+    const file = req.query.file || "local-ch30.playlist.m3u8";
+    const url = BASE + file;
 
-const html = embed.data;
+    try {
 
-/* buscar id del stream */
+        const response = await axios.get(url, {
+            responseType: "text",
+            headers: {
+                "User-Agent": "Mozilla/5.0",
+                "Referer": "http://45.225.68.1/"
+            }
+        });
 
-const idMatch = html.match(/"broadcast_id":"(\d+)"/);
+        if (file.includes(".m3u8")) {
 
-if(!idMatch){
-return null;
-}
+            let playlist = response.data;
 
-const broadcastId = idMatch[1];
+            playlist = playlist.replace(/(.*\.ts)/g, (match) => {
+                return "/stream?file=" + match;
+            });
 
-/* consultar info del stream */
+            res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+            res.send(playlist);
 
-const api = await axios.get(
-`https://live.vkvideo.ru/api/v1/broadcast/${broadcastId}`,
-{headers:{ "User-Agent":"Mozilla/5.0"}}
-);
+        } else {
 
-if(api.data && api.data.playback_url){
-return api.data.playback_url;
-}
+            const stream = await axios({
+                url: url,
+                method: "GET",
+                responseType: "stream"
+            });
 
-return null;
+            res.setHeader("Content-Type", "video/mp2t");
+            stream.data.pipe(res);
 
-}catch(e){
+        }
 
-return "ERROR: "+e.message;
-
-}
-
-}
-
-app.get("/",(req,res)=>{
-res.send("Extractor VK funcionando");
-});
-
-app.get("/stream", async (req,res)=>{
-
-const stream = await getStream();
-
-res.send(stream || "STREAM NO DISPONIBLE");
+    } catch (error) {
+        res.status(500).send("Error cargando stream");
+    }
 
 });
 
-app.listen(PORT,()=>{
-console.log("Servidor iniciado");
+app.listen(3000, () => {
+    console.log("Proxy HLS activo");
 });
