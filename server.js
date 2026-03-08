@@ -3,63 +3,78 @@ const axios = require("axios");
 
 const app = express();
 
-const BASE = "http://38.49.128.38:8000";
+const BASE = "http://38.49.128.38:8000/play/";
 
-app.get("/stream/:canal", async (req, res) => {
+const headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Accept": "*/*",
+    "Connection": "keep-alive",
+    "Referer": "http://38.49.128.38:8000/",
+    "Origin": "http://38.49.128.38:8000"
+};
+
+app.get("/stream/:canal", async (req,res)=>{
 
     const canal = req.params.canal;
     const file = req.query.file || "index.m3u8";
 
-    const url = `${BASE}/play/${canal}/${file}`;
+    const url = `${BASE}${canal}/${file}`;
 
-    try {
+    try{
 
-        if (file.endsWith(".m3u8")) {
+        // PLAYLIST
+        if(file.includes(".m3u8")){
 
-            const response = await axios.get(url, {
-                headers: {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-                    "Accept": "*/*",
-                    "Connection": "keep-alive",
-                    "Referer": `${BASE}/`
-                },
-                timeout: 10000
+            const response = await axios.get(url,{
+                headers: headers,
+                timeout: 15000
             });
 
             let playlist = response.data;
 
             const refresh = Math.floor(Date.now()/10000);
 
-            playlist = playlist.replace(/(.*\.ts)/g, (seg) => {
-                return `/stream/${canal}?file=${seg}&r=${refresh}`;
-            });
+            const lines = playlist.split("\n");
 
-            res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-            res.setHeader("Cache-Control", "no-cache");
+            const newPlaylist = lines.map(line=>{
 
-            res.send(playlist);
+                line = line.trim();
 
-        } else {
+                if(line.endsWith(".ts") || line.endsWith(".m3u8")){
+                    return `/stream/${canal}?file=${line}&t=${refresh}`;
+                }
+
+                return line;
+
+            }).join("\n");
+
+            res.setHeader("Content-Type","application/vnd.apple.mpegurl");
+            res.setHeader("Cache-Control","no-cache");
+
+            res.send(newPlaylist);
+
+        }
+
+        // SEGMENTOS VIDEO
+        else{
 
             const stream = await axios({
-                url: url,
-                method: "GET",
-                responseType: "stream",
-                headers: {
-                    "User-Agent": "Mozilla/5.0",
-                    "Referer": `${BASE}/`
-                }
+                url:url,
+                method:"GET",
+                responseType:"stream",
+                headers: headers,
+                timeout: 20000
             });
 
-            res.setHeader("Content-Type", "video/mp2t");
+            res.setHeader("Content-Type","video/mp2t");
 
             stream.data.pipe(res);
 
         }
 
-    } catch (error) {
+    }catch(e){
 
-        console.log("ERROR:", error.message);
+        console.log("ERROR STREAM:", e.message);
 
         res.status(500).send("Error cargando stream");
 
@@ -67,6 +82,8 @@ app.get("/stream/:canal", async (req, res) => {
 
 });
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log("Proxy HLS activo");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT,()=>{
+    console.log("Proxy IPTV activo");
 });
