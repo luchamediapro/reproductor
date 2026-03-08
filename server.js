@@ -13,7 +13,7 @@ const headers = {
     "Origin": "http://45.5.119.43:4000"
 };
 
-app.get("/stream/:canal", async (req,res)=>{
+app.get("/stream/a0l0", async (req,res)=>{
 
     const canal = req.params.canal;
     const file = req.query.file || "index.m3u8";
