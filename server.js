@@ -18,16 +18,20 @@ app.get("/stream/:canal", async (req, res) => {
 
             const response = await axios.get(url, {
                 headers: {
-                    "User-Agent": "Mozilla/5.0"
-                }
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                    "Accept": "*/*",
+                    "Connection": "keep-alive",
+                    "Referer": `${BASE}/`
+                },
+                timeout: 10000
             });
 
             let playlist = response.data;
 
-            const refresh = Math.floor(Date.now() / 10000);
+            const refresh = Math.floor(Date.now()/10000);
 
-            playlist = playlist.replace(/(.*\.ts)/g, (match) => {
-                return `/stream/${canal}?file=${match}&r=${refresh}`;
+            playlist = playlist.replace(/(.*\.ts)/g, (seg) => {
+                return `/stream/${canal}?file=${seg}&r=${refresh}`;
             });
 
             res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
@@ -42,7 +46,8 @@ app.get("/stream/:canal", async (req, res) => {
                 method: "GET",
                 responseType: "stream",
                 headers: {
-                    "User-Agent": "Mozilla/5.0"
+                    "User-Agent": "Mozilla/5.0",
+                    "Referer": `${BASE}/`
                 }
             });
 
@@ -54,9 +59,9 @@ app.get("/stream/:canal", async (req, res) => {
 
     } catch (error) {
 
-        console.log(error.message);
+        console.log("ERROR:", error.message);
 
-        res.send("Error cargando stream");
+        res.status(500).send("Error cargando stream");
 
     }
 
