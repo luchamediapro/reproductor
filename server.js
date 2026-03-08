@@ -3,7 +3,8 @@ const axios = require("axios");
 
 const app = express();
 
-const BASE = "http://45.225.68.1:8532/Live/878e0987f8fffce401028e0283b0b24d/";
+// URL base del stream
+const BASE = "http://38.49.128.38:8000/play/a0c1/";
 
 app.get("/", (req,res)=>{
     res.send("Proxy HLS activo");
@@ -11,7 +12,7 @@ app.get("/", (req,res)=>{
 
 app.get("/stream", async (req,res)=>{
 
-    const file = req.query.file || "local-ch30.playlist.m3u8";
+    const file = req.query.file || "index.m3u8";
     const url = BASE + file;
 
     try{
@@ -26,7 +27,7 @@ app.get("/stream", async (req,res)=>{
 
             let playlist = response.data;
 
-            const refresh = Math.floor(Date.now()/10000); // 🔴 cambia cada 10s
+            const refresh = Math.floor(Date.now()/10000); // cambia cada 10s
 
             const lines = playlist.split("\n");
 
@@ -67,7 +68,7 @@ app.get("/stream", async (req,res)=>{
     }catch(e){
 
         console.log(e.message);
-        res.status(500).send("Error stream");
+        res.status(500).send("Error cargando stream");
 
     }
 
