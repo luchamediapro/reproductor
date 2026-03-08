@@ -6,17 +6,18 @@ const app = express();
 const BASE = "http://45.225.68.1:8532/Live/878e0987f8fffce401028e0283b0b24d/";
 
 app.get("/", (req,res)=>{
-    res.send("Proxy HLS activo");
+    res.send("Proxy HLS funcionando");
 });
 
-app.get("/stream", async (req, res) => {
+app.get("/stream", async (req,res)=>{
 
     const file = req.query.file || "local-ch30.playlist.m3u8";
     const url = BASE + file;
 
-    try {
+    try{
 
-        if(file.endsWith(".m3u8")){
+        // PLAYLIST
+        if(file.includes(".m3u8")){
 
             const response = await axios.get(url,{
                 headers:{
@@ -26,14 +27,28 @@ app.get("/stream", async (req, res) => {
 
             let playlist = response.data;
 
-            playlist = playlist.replace(/(.*\.ts)/g,(match)=>{
-                return `/stream?file=${match}`;
-            });
+            const lines = playlist.split("\n");
+
+            const newPlaylist = lines.map(line => {
+
+                line = line.trim();
+
+                if(line.endsWith(".m3u8") || line.endsWith(".ts")){
+                    return "/stream?file=" + line;
+                }
+
+                return line;
+
+            }).join("\n");
 
             res.setHeader("Content-Type","application/vnd.apple.mpegurl");
-            res.send(playlist);
 
-        }else{
+            res.send(newPlaylist);
+
+        }
+
+        // SEGMENTOS VIDEO
+        else{
 
             const stream = await axios({
                 url:url,
@@ -50,10 +65,11 @@ app.get("/stream", async (req, res) => {
 
         }
 
-    } catch(e){
+    }catch(e){
 
         console.log(e.message);
-        res.status(500).send("Error en stream");
+
+        res.status(500).send("Error cargando stream");
 
     }
 
