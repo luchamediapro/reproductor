@@ -16,17 +16,17 @@ app.get("/stream", async (req,res)=>{
 
     try{
 
-        // PLAYLIST
         if(file.includes(".m3u8")){
 
             const response = await axios.get(url,{
                 headers:{
-                    "User-Agent":"Mozilla/5.0",
-                    "Connection":"keep-alive"
+                    "User-Agent":"Mozilla/5.0"
                 }
             });
 
             let playlist = response.data;
+
+            const refresh = Math.floor(Date.now()/10000); // 🔴 cambia cada 10s
 
             const lines = playlist.split("\n");
 
@@ -35,7 +35,7 @@ app.get("/stream", async (req,res)=>{
                 line = line.trim();
 
                 if(line.endsWith(".m3u8") || line.endsWith(".ts")){
-                    return "/stream?file=" + line + "&t=" + Date.now();
+                    return `/stream?file=${line}&r=${refresh}`;
                 }
 
                 return line;
@@ -43,26 +43,18 @@ app.get("/stream", async (req,res)=>{
             }).join("\n");
 
             res.setHeader("Content-Type","application/vnd.apple.mpegurl");
-
-            // evitar cache
-            res.setHeader("Cache-Control","no-cache, no-store, must-revalidate");
-            res.setHeader("Pragma","no-cache");
-            res.setHeader("Expires","0");
+            res.setHeader("Cache-Control","no-cache");
 
             res.send(newPlaylist);
 
-        }
-
-        // SEGMENTOS
-        else{
+        }else{
 
             const stream = await axios({
                 url:url,
                 method:"GET",
                 responseType:"stream",
                 headers:{
-                    "User-Agent":"Mozilla/5.0",
-                    "Connection":"keep-alive"
+                    "User-Agent":"Mozilla/5.0"
                 }
             });
 
@@ -74,9 +66,8 @@ app.get("/stream", async (req,res)=>{
 
     }catch(e){
 
-        console.log("Error:", e.message);
-
-        res.status(500).send("Error cargando stream");
+        console.log(e.message);
+        res.status(500).send("Error stream");
 
     }
 
