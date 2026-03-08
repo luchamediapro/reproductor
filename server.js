@@ -3,31 +3,31 @@ const axios = require("axios");
 
 const app = express();
 
-// URL base del stream
-const BASE = "http://38.49.128.38:8000/play/a0c1/";
+const BASE = "http://38.49.128.38:8000/play/";
 
 app.get("/", (req,res)=>{
     res.send("Proxy HLS activo");
 });
 
-app.get("/stream", async (req,res)=>{
+app.get("/stream/:canal", async (req,res)=>{
 
+    const canal = req.params.canal;
     const file = req.query.file || "index.m3u8";
-    const url = BASE + file;
+
+    const url = `${BASE}${canal}/${file}`;
 
     try{
 
+        // PLAYLIST
         if(file.includes(".m3u8")){
 
             const response = await axios.get(url,{
-                headers:{
-                    "User-Agent":"Mozilla/5.0"
-                }
+                headers:{ "User-Agent":"Mozilla/5.0" }
             });
 
             let playlist = response.data;
 
-            const refresh = Math.floor(Date.now()/10000); // cambia cada 10s
+            const refresh = Math.floor(Date.now()/10000);
 
             const lines = playlist.split("\n");
 
@@ -36,7 +36,7 @@ app.get("/stream", async (req,res)=>{
                 line = line.trim();
 
                 if(line.endsWith(".m3u8") || line.endsWith(".ts")){
-                    return `/stream?file=${line}&r=${refresh}`;
+                    return `/stream/${canal}?file=${line}&r=${refresh}`;
                 }
 
                 return line;
@@ -48,15 +48,16 @@ app.get("/stream", async (req,res)=>{
 
             res.send(newPlaylist);
 
-        }else{
+        }
+
+        // SEGMENTOS
+        else{
 
             const stream = await axios({
                 url:url,
                 method:"GET",
                 responseType:"stream",
-                headers:{
-                    "User-Agent":"Mozilla/5.0"
-                }
+                headers:{ "User-Agent":"Mozilla/5.0" }
             });
 
             res.setHeader("Content-Type","video/mp2t");
@@ -78,6 +79,6 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT,()=>{
 
-    console.log("Proxy HLS funcionando");
+    console.log("Proxy funcionando");
 
 });
