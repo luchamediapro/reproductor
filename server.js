@@ -3,14 +3,14 @@ const axios = require("axios");
 
 const app = express();
 
-const BASE = "http://38.49.128.38:8000/play/";
+const BASE = "http://45.5.119.43:4000/play/";
 
 const headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
     "Accept": "*/*",
     "Connection": "keep-alive",
-    "Referer": "http://38.49.128.38:8000/",
-    "Origin": "http://38.49.128.38:8000"
+    "Referer": "http://45.5.119.43:4000/",
+    "Origin": "http://45.5.119.43:4000"
 };
 
 app.get("/stream/:canal", async (req,res)=>{
@@ -22,13 +22,9 @@ app.get("/stream/:canal", async (req,res)=>{
 
     try{
 
-        // PLAYLIST
         if(file.includes(".m3u8")){
 
-            const response = await axios.get(url,{
-                headers: headers,
-                timeout: 15000
-            });
+            const response = await axios.get(url,{ headers });
 
             let playlist = response.data;
 
@@ -53,17 +49,13 @@ app.get("/stream/:canal", async (req,res)=>{
 
             res.send(newPlaylist);
 
-        }
-
-        // SEGMENTOS VIDEO
-        else{
+        } else {
 
             const stream = await axios({
                 url:url,
                 method:"GET",
                 responseType:"stream",
-                headers: headers,
-                timeout: 20000
+                headers: headers
             });
 
             res.setHeader("Content-Type","video/mp2t");
@@ -74,7 +66,7 @@ app.get("/stream/:canal", async (req,res)=>{
 
     }catch(e){
 
-        console.log("ERROR STREAM:", e.message);
+        console.log("ERROR:", e.message);
 
         res.status(500).send("Error cargando stream");
 
