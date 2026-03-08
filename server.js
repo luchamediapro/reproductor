@@ -3,30 +3,29 @@ const axios = require("axios");
 
 const app = express();
 
-const BASE = "http://45.5.119.43:4000/play/";
-
 const headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
     "Accept": "*/*",
-    "Connection": "keep-alive",
-    "Referer": "http://45.5.119.43:4000/",
-    "Origin": "http://45.5.119.43:4000"
+    "Connection": "keep-alive"
 };
 
-app.get("/stream/a0l0", async (req,res)=>{
+app.get("/stream", async (req,res)=>{
 
-    const canal = req.params.canal;
-    const file = req.query.file || "index.m3u8";
+    const url = req.query.url;
 
-    const url = `${BASE}${canal}/${file}`;
+    if(!url){
+        return res.send("Falta URL");
+    }
 
     try{
 
-        if(file.includes(".m3u8")){
+        if(url.includes(".m3u8")){
 
             const response = await axios.get(url,{ headers });
 
             let playlist = response.data;
+
+            const base = url.substring(0, url.lastIndexOf("/") + 1);
 
             const refresh = Math.floor(Date.now()/10000);
 
@@ -37,7 +36,13 @@ app.get("/stream/a0l0", async (req,res)=>{
                 line = line.trim();
 
                 if(line.endsWith(".ts") || line.endsWith(".m3u8")){
-                    return `/stream/${canal}?file=${line}&t=${refresh}`;
+
+                    const absolute = line.startsWith("http")
+                        ? line
+                        : base + line;
+
+                    return `/stream?url=${encodeURIComponent(absolute)}&t=${refresh}`;
+
                 }
 
                 return line;
@@ -77,5 +82,5 @@ app.get("/stream/a0l0", async (req,res)=>{
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT,()=>{
-    console.log("Proxy IPTV activo");
+    console.log("Proxy IPTV universal activo");
 });
