@@ -10,7 +10,6 @@ const headers = {
 app.get("/stream", async (req, res) => {
 
     const url = req.query.url;
-
     if (!url) return res.send("Falta URL");
 
     try {
@@ -26,10 +25,15 @@ app.get("/stream", async (req, res) => {
 
             line = line.trim();
 
-            if (!line || line.startsWith("#")) return line;
+            // NO tocar comentarios
+            if (line.startsWith("#") || line === "") return line;
 
-            // convertir TODO a absoluto
-            if (!line.startsWith("http")) {
+            // SOLO archivos .ts o .m3u8
+            if (line.includes(".ts") || line.includes(".m3u8")) {
+
+                // si ya es absoluta, dejarla
+                if (line.startsWith("http")) return line;
+
                 return base + line;
             }
 
@@ -48,5 +52,5 @@ app.get("/stream", async (req, res) => {
 });
 
 app.listen(3000, () => {
-    console.log("Proxy ligero FIX");
+    console.log("Proxy FIX VLC listo");
 });
