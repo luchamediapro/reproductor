@@ -4,83 +4,54 @@ const axios = require("axios");
 const app = express();
 
 const headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-    "Accept": "*/*",
-    "Connection": "keep-alive"
+    "User-Agent": "Mozilla/5.0",
+    "Accept": "*/*"
 };
 
-app.get("/stream", async (req,res)=>{
+app.get("/stream", async (req, res) => {
 
     const url = req.query.url;
 
-    if(!url){
-        return res.send("Falta URL");
-    }
+    if (!url) return res.send("Falta URL");
 
-    try{
+    try {
 
-        if(url.includes(".m3u8")){
+        const response = await axios.get(url, { headers });
 
-            const response = await axios.get(url,{ headers });
+        let playlist = response.data;
 
-            let playlist = response.data;
+        const base = url.substring(0, url.lastIndexOf("/") + 1);
 
-            const base = url.substring(0, url.lastIndexOf("/") + 1);
+        const lines = playlist.split("\n");
 
-            const refresh = Math.floor(Date.now()/10000);
+        const newPlaylist = lines.map(line => {
 
-            const lines = playlist.split("\n");
+            line = line.trim();
 
-            const newPlaylist = lines.map(line=>{
+            // SOLO modifica sub-playlists, NO .ts
+            if (line.endsWith(".m3u8")) {
 
-                line = line.trim();
+                const absolute = line.startsWith("http")
+                    ? line
+                    : base + line;
 
-                if(line.endsWith(".ts") || line.endsWith(".m3u8")){
+                return `/stream?url=${encodeURIComponent(absolute)}`;
+            }
 
-                    const absolute = line.startsWith("http")
-                        ? line
-                        : base + line;
+            // .ts quedan directos → NO pasan por tu server
+            return line;
 
-                    return `/stream?url=${encodeURIComponent(absolute)}&t=${refresh}`;
+        }).join("\n");
 
-                }
+        res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+        res.send(newPlaylist);
 
-                return line;
-
-            }).join("\n");
-
-            res.setHeader("Content-Type","application/vnd.apple.mpegurl");
-            res.setHeader("Cache-Control","no-cache");
-
-            res.send(newPlaylist);
-
-        } else {
-
-            const stream = await axios({
-                url:url,
-                method:"GET",
-                responseType:"stream",
-                headers: headers
-            });
-
-            res.setHeader("Content-Type","video/mp2t");
-
-            stream.data.pipe(res);
-
-        }
-
-    }catch(e){
-
-        console.log("ERROR:", e.message);
-
-        res.status(500).send("Error cargando stream");
-
+    } catch (e) {
+        res.status(500).send("Error");
     }
 
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT,()=>{
-    console.log("Proxy IPTV universal activo");
+app.listen(3000, () => {
+    console.log("Proxy ligero activo");
 });
